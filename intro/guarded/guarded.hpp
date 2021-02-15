@@ -35,7 +35,6 @@ class Guarded {
   Guarded(Args&&... args) : object_(std::forward<Args>(args)...) {
   }
 
-  // Your code goes here
   // https://en.cppreference.com/w/cpp/language/operators
 
   Unlocker<T> operator->() {
