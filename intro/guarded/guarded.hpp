@@ -1,6 +1,7 @@
 #pragma once
 
 #include <twist/stdlike/mutex.hpp>
+#include <mutex>
 
 namespace solutions {
 
@@ -8,14 +9,10 @@ namespace solutions {
 // Look at unit tests for API and usage examples
 
 template <typename T>
-class Unlocker {
+class MutexUnlocker {
  public:
-  Unlocker(twist::stdlike::mutex& locked_mutex, T* object)
-      : mutex_(locked_mutex), object_(object) {
-  }
-
-  ~Unlocker() {
-    mutex_.unlock();
+  MutexUnlocker(twist::stdlike::mutex& mutex, T* object)
+      : lock_(mutex), object_(object) {
   }
 
   T* operator->() {
@@ -23,7 +20,7 @@ class Unlocker {
   }
 
  private:
-  twist::stdlike::mutex& mutex_;  // Guards access to object_
+  std::lock_guard<twist::stdlike::mutex> lock_;  // Guards access to object_
   T* object_;
 };
 
@@ -37,9 +34,8 @@ class Guarded {
 
   // https://en.cppreference.com/w/cpp/language/operators
 
-  Unlocker<T> operator->() {
-    mutex_.lock();
-    return Unlocker<T>(mutex_, &object_);
+  MutexUnlocker<T> operator->() {
+    return MutexUnlocker<T>(mutex_, &object_);
   }
 
  private:
