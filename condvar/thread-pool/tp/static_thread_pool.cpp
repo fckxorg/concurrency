@@ -13,8 +13,8 @@ static twist::util::ThreadLocal<StaticThreadPool*> pool{nullptr};
 
 ////////////////////////////////////////////////////////////////////////////////
 
-StaticThreadPool::StaticThreadPool(size_t n_workers) : runners(0) {
-  cv.store(0);
+StaticThreadPool::StaticThreadPool(size_t n_workers) : runners_(0) {
+  cv_.store(0);
   for (size_t i = 0; i < n_workers; ++i) {
     workers_.emplace_back([this]() {
       WorkerRoutine();
@@ -26,13 +26,13 @@ StaticThreadPool::~StaticThreadPool() {
 }
 
 void StaticThreadPool::Submit(Task new_task) {
-  runners.fetch_add(1);
+  runners_.fetch_add(1);
   queue_.Put(std::move(new_task));
 }
 
 void StaticThreadPool::Join() {
-  while (runners != 0) {
-    cv.wait(0);
+  while (runners_ != 0) {
+    cv_.wait(0);
   }
   queue_.Close();
   JoinWorkers();
@@ -63,9 +63,9 @@ void StaticThreadPool::WorkerRoutine() {
     }
 
     ExecuteHere(*task);
-    if (runners.fetch_sub(1) == 1) {
-      cv.store(1);
-      cv.notify_one();
+    if (runners_.fetch_sub(1) == 1) {
+      cv_.store(1);
+      cv_.notify_one();
     }
   }
 }

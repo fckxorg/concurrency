@@ -14,9 +14,6 @@ namespace tp {
 
 class StaticThreadPool {
  public:
-  twist::stdlike::atomic<uint32_t> runners;
-  twist::stdlike::atomic<uint32_t> cv;
-
   explicit StaticThreadPool(size_t workers);
   ~StaticThreadPool();
 
@@ -42,6 +39,8 @@ class StaticThreadPool {
  private:
   UnboundedBlockingQueue<Task> queue_;
   std::vector<twist::stdlike::thread> workers_;
+  twist::stdlike::atomic<uint32_t> runners_;
+  twist::stdlike::atomic<uint32_t> cv_;
 
   void JoinWorkers();
 

@@ -17,8 +17,9 @@ template <typename T>
 class UnboundedBlockingQueue {
  public:
   bool Put(T element) {
-    if (closed_.load())
+    if (closed_.load() != 0u) {
       return false;
+    }
 
     std::lock_guard lock(mutex_);
     queue_.push(std::move(element));
@@ -30,12 +31,13 @@ class UnboundedBlockingQueue {
   std::optional<T> Take() {
     std::unique_lock lock(mutex_);
 
-    while (queue_.empty() && !(closed_.load())) {
+    while (queue_.empty() && ((closed_.load()) == 0u)) {
       not_empty_.wait(lock);
     }
 
-    if (closed_.load() && queue_.empty())
+    if (closed_.load() && queue_.empty()) {
       return std::nullopt;
+    }
 
     auto task = std::optional{std::move(queue_.front())};
     queue_.pop();
