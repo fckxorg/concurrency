@@ -42,6 +42,8 @@ class StaticThreadPool {
   twist::stdlike::atomic<uint32_t> runners_;
   twist::stdlike::atomic<uint32_t> cv_;
 
+  bool finished_;
+
   void JoinWorkers();
 
   void WorkerRoutine();
