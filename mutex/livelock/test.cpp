@@ -43,7 +43,6 @@ TEST_SUITE(TrickyLock) {
           }
 
           // TrickyLock::Unlock
-          tinyfibers::self::Yield();
           --thread_count;
           // Spinlock released
         }
