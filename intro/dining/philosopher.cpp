@@ -22,14 +22,12 @@ void Philosopher::EatThenThink() {
 // Acquire left_fork_ and right_fork_
 void Philosopher::AcquireForks() {
   if (seat_ % 2 == 0) {
-    table_.LeftFork(seat_).lock();
-    table_.RightFork(seat_).lock();
-
-    return;
+    left_fork_.lock();
+    right_fork_.lock();
+  } else {
+    right_fork_.lock();
+    left_fork_.lock();
   }
-
-  table_.RightFork(seat_).lock();
-  table_.LeftFork(seat_).lock();
 }
 
 void Philosopher::Eat() {
@@ -41,8 +39,8 @@ void Philosopher::Eat() {
 
 // Release left_fork_ and right_fork_
 void Philosopher::ReleaseForks() {
-  table_.LeftFork(seat_).unlock();
-  table_.RightFork(seat_).unlock();
+  left_fork_.unlock();
+  right_fork_.unlock();
 }
 
 void Philosopher::Think() {
