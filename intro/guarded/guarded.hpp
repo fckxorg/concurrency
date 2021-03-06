@@ -7,20 +7,23 @@ namespace solutions {
 
 // Automagically wraps all accesses to guarded object to critical sections
 // Look at unit tests for API and usage examples
-template <typename T>
+
+namespace {
+template <typename GuardedT>
 class MutexUnlocker : private std::lock_guard<twist::stdlike::mutex> {
  public:
-  MutexUnlocker(twist::stdlike::mutex& mutex, T* object)
+  MutexUnlocker(twist::stdlike::mutex& mutex, GuardedT* object)
       : std::lock_guard<twist::stdlike::mutex>(mutex), object_(object) {
   }
 
-  T* operator->() {
+  GuardedT* operator->() {
     return object_;
   }
 
  private:
-  T* object_;
+  GuardedT* object_;
 };
+}  // namespace
 
 template <typename T>
 class Guarded {
