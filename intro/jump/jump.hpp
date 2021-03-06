@@ -9,7 +9,12 @@
 struct JumpContext {
   // CPU registers?
   uint64_t rip = 0;
-  uint64_t rsi = 0;
+  uint64_t rbx = 0;
+  uint64_t rbp = 0;
+  uint64_t r12 = 0;
+  uint64_t r13 = 0;
+  uint64_t r14 = 0;
+  uint64_t r15 = 0;
 };
 
 // Captures the current execution context into 'ctx'
