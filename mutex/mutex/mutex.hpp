@@ -14,17 +14,23 @@ class Mutex {
  public:
   void Lock() {
     while (locked_.exchange(1) != 0) {
+      n_threads_.fetch_add(1);
       locked_.wait(1);
+      n_threads_.fetch_sub(1);
     }
   }
 
   void Unlock() {
     locked_.exchange(0);
-    locked_.notify_one();
+
+    if (n_threads_.load()) {
+      locked_.notify_one();
+    }
   }
 
  private:
   twist::stdlike::atomic<unsigned int> locked_;
+  twist::stdlike::atomic<unsigned int> n_threads_{0};
 };
 
 }  // namespace solutions
