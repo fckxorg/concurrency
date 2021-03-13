@@ -23,7 +23,7 @@ class Mutex {
   void Unlock() {
     locked_.exchange(0);
 
-    if (n_threads_.load()) {
+    if (n_threads_.load() != 0u) {
       locked_.notify_one();
     }
   }
