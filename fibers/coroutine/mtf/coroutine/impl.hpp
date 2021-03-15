@@ -31,11 +31,14 @@ class Coroutine {
  private:
   context::ExecutionContext coroutine_context_;
   context::ExecutionContext caller_context_;
+
   Routine routine_;
   bool is_completed_;
-  Coroutine* prev_coroutine_;
 
   static Coroutine* current_coroutine_;
+  Coroutine* prev_coroutine_;
+
+  std::exception_ptr routine_exception_;
 };
 
 }  // namespace mtf::coroutine::impl
