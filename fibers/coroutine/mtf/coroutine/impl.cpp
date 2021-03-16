@@ -2,7 +2,7 @@
 
 namespace mtf::coroutine::impl {
 
-Coroutine* Coroutine::current_coroutine_{nullptr};
+thread_local Coroutine* Coroutine::current_coroutine_{nullptr};
 
 Coroutine::Coroutine(Routine routine, context::StackView stack)
     : routine_(std::move(routine)),

@@ -17,6 +17,7 @@ class Coroutine {
   // Non-copyable
   Coroutine(const Coroutine&) = delete;
   Coroutine& operator=(const Coroutine&) = delete;
+  Coroutine(Coroutine&& other) = default;
 
   void Resume();
 
@@ -25,17 +26,17 @@ class Coroutine {
 
   bool IsCompleted() const;
 
+  Routine routine_;
+
  private:
   [[noreturn]] static void Trampoline();
 
- private:
   context::ExecutionContext coroutine_context_;
   context::ExecutionContext caller_context_;
 
-  Routine routine_;
   bool is_completed_;
 
-  static Coroutine* current_coroutine_;
+  static thread_local Coroutine* current_coroutine_;
   Coroutine* prev_coroutine_;
 
   std::exception_ptr routine_exception_;
