@@ -36,8 +36,7 @@ class Coroutine {
 
   bool is_completed_;
 
-  static thread_local Coroutine* current_coroutine_;
-  Coroutine* prev_coroutine_;
+  static thread_local Coroutine* current_coroutine;
 
   std::exception_ptr routine_exception_;
 };

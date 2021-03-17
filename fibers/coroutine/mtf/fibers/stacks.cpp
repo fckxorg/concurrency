@@ -10,24 +10,24 @@ Stack AllocateStack() {
 }
 
 context::Stack StackPool::TakeStack() {
-  std::lock_guard lock(mutex_);
+  std::lock_guard lock(mutex);
 
-  if (allocated_stacks_.empty()) {
+  if (allocated_stacks.empty()) {
     return AllocateStack();
   } else {
-    context::Stack free_stack = std::move(allocated_stacks_.front());
-    allocated_stacks_.pop_front();
+    context::Stack free_stack = std::move(allocated_stacks.front());
+    allocated_stacks.pop_front();
     return free_stack;
   }
 }
 
 void StackPool::ReturnStack(context::Stack stack) {
-  std::lock_guard lock(mutex_);
+  std::lock_guard lock(mutex);
 
-  allocated_stacks_.push_back(std::move(stack));
+  allocated_stacks.push_back(std::move(stack));
 }
 
-mtf::spinlock::TATASSpinlock StackPool::mutex_{};
-std::deque<context::Stack> StackPool::allocated_stacks_{};
+mtf::spinlock::TATASSpinlock StackPool::mutex{};
+std::deque<context::Stack> StackPool::allocated_stacks{};
 
 }  // namespace mtf::fibers

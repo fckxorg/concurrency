@@ -19,7 +19,7 @@ class StackPool {
   static void ReturnStack(context::Stack stack);
 
  private:
-  static mtf::spinlock::TATASSpinlock mutex_;
-  static std::deque<context::Stack> allocated_stacks_;  // guarded by mutex_
+  static mtf::spinlock::TATASSpinlock mutex;
+  static std::deque<context::Stack> allocated_stacks;  // guarded by mutex_
 };
 }  // namespace mtf::fibers

@@ -1,4 +1,4 @@
-#include <atomic>
+#include <twist/stdlike/atomic.hpp>
 
 namespace mtf::spinlock {
 class TATASSpinlock {
@@ -7,18 +7,18 @@ class TATASSpinlock {
   TATASSpinlock(const TATASSpinlock& other) = delete;
   TATASSpinlock& operator=(const TATASSpinlock& other) = delete;
 
-  void lock() {
+  void lock() {  // NOLINT
     do {
-      while (busy_.load()) {
+      while (busy_.load() != 0u) {
       }
-    } while (busy_.exchange(true));
+    } while (busy_.exchange(1) != 0u);
   }
 
-  void unlock() {
-    busy_.store(false);
+  void unlock() {  // NOLINT
+    busy_.store(0);
   }
 
  private:
-  std::atomic<bool> busy_;
+  twist::stdlike::atomic<uint32_t> busy_;
 };
 };  // namespace mtf::spinlock
