@@ -11,8 +11,25 @@ Stack AllocateStack() {
   return Stack::AllocatePages(kStackPages);
 }
 
-void ReleaseStack(Stack stack) {
-  Stack released{std::move(stack)};
+context::Stack StackPool::TakeStack() {
+  std::lock_guard lock(mutex_);
+
+  if (allocated_stacks_.empty()) {
+    return AllocateStack();
+  } else {
+    context::Stack free_stack = std::move(allocated_stacks_.front());
+    allocated_stacks_.pop_front();
+    return free_stack;
+  }
 }
+
+void StackPool::ReturnStack(context::Stack stack) {
+  std::lock_guard lock(mutex_);
+
+  allocated_stacks_.push_back(std::move(stack));
+}
+
+std::mutex StackPool::mutex_{};
+std::deque<context::Stack> StackPool::allocated_stacks_{};
 
 }  // namespace mtf::fibers

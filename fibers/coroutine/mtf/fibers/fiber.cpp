@@ -15,7 +15,7 @@ using tp::StaticThreadPool;
 class Fiber {
  public:
   Fiber(Routine routine, StaticThreadPool& scheduler)
-      : stack_(AllocateStack()),
+      : stack_(StackPool::TakeStack()),
         fiber_routine_(std::move(routine), stack_.View()) {
     worker_routine_ = [this]() {
       fiber_routine_.Resume();
@@ -32,7 +32,7 @@ class Fiber {
   Fiber(const Fiber& other) = delete;
 
   ~Fiber() {
-    ReleaseStack(std::move(stack_));
+    StackPool::ReturnStack(std::move(stack_));
   }
 
   mtf::tp::Task GetWorkerRoutine() {
