@@ -7,8 +7,16 @@ class TATASSpinlock {
   TATASSpinlock(const TATASSpinlock& other) = delete;
   TATASSpinlock& operator=(const TATASSpinlock& other) = delete;
 
-  void lock();
-  void unlock();
+  void lock() {
+    do {
+      while (busy_.load()) {
+      }
+    } while (busy_.exchange(true));
+  }
+
+  void unlock() {
+    busy_.store(false);
+  }
 
  private:
   std::atomic<bool> busy_;
