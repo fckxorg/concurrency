@@ -1,8 +1,10 @@
 #pragma once
 
 #include <context/stack.hpp>
-#include <mutex>
 #include <deque>
+#include <mutex>
+
+#include "spinlock.hpp"
 
 namespace mtf::fibers {
 
@@ -17,7 +19,7 @@ class StackPool {
   static void ReturnStack(context::Stack stack);
 
  private:
-  static std::mutex mutex_;
+  static mtf::spinlock::TATASSpinlock mutex_;
   static std::deque<context::Stack> allocated_stacks_;  // guarded by mutex_
 };
 }  // namespace mtf::fibers

@@ -1,7 +1,5 @@
 #include <mtf/fibers/stacks.hpp>
 
-#include <atomic>
-
 namespace mtf::fibers {
 
 using context::Stack;
@@ -29,7 +27,7 @@ void StackPool::ReturnStack(context::Stack stack) {
   allocated_stacks_.push_back(std::move(stack));
 }
 
-std::mutex StackPool::mutex_{};
+mtf::spinlock::TATASSpinlock StackPool::mutex_{};
 std::deque<context::Stack> StackPool::allocated_stacks_{};
 
 }  // namespace mtf::fibers
