@@ -14,23 +14,30 @@ class ConditionVariable {
   void Wait(Mutex& mutex) {
     uint32_t old = state_.load();
 
+    n_waiting_.fetch_add(1);
     mutex.unlock();
     state_.wait(old);
     mutex.lock();
+    n_waiting_.fetch_sub(1);
   }
 
   void NotifyOne() {
     state_.fetch_add(1);
-    state_.notify_one();
+    if (n_waiting_.load() != 0u) {
+      state_.notify_one();
+    }
   }
 
   void NotifyAll() {
     state_.fetch_add(1);
-    state_.notify_all();
+    if (n_waiting_.load() != 0u) {
+      state_.notify_all();
+    }
   }
 
  private:
   twist::stdlike::atomic<uint32_t> state_;
+  twist::stdlike::atomic<uint32_t> n_waiting_;
   // TODO counter for wait
 };
 
