@@ -40,7 +40,7 @@ class StaticThreadPool {
   UnboundedBlockingQueue<Task> queue_;
   std::vector<twist::stdlike::thread> workers_;
   twist::stdlike::atomic<uint32_t> runners_;
-  twist::stdlike::atomic<uint32_t> cv_;
+  twist::stdlike::atomic<uint32_t> no_tasks_left_;
 
   bool finished_;
 
