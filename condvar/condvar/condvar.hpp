@@ -22,15 +22,15 @@ class ConditionVariable {
   }
 
   void NotifyOne() {
-    state_.fetch_add(1);
     if (n_waiting_.load() != 0u) {
+      state_.fetch_add(1);
       state_.notify_one();
     }
   }
 
   void NotifyAll() {
-    state_.fetch_add(1);
     if (n_waiting_.load() != 0u) {
+      state_.fetch_add(1);
       state_.notify_all();
     }
   }
