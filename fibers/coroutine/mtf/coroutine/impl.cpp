@@ -14,7 +14,9 @@ Coroutine::Coroutine(Routine routine, context::StackView stack)
 void Coroutine::Resume() {
   Coroutine* prev_coroutine = std::exchange(current_coroutine, this);
 
-  caller_context_.SwitchTo(coroutine_context_);
+  if (!current_coroutine->IsCompleted()) {
+    caller_context_.SwitchTo(coroutine_context_);
+  }
   current_coroutine = prev_coroutine;
 
   if (routine_exception_) {
@@ -23,8 +25,8 @@ void Coroutine::Resume() {
 }
 
 void Coroutine::Suspend() {
-  Coroutine* suspended = current_coroutine;
-  suspended->coroutine_context_.SwitchTo(suspended->caller_context_);
+  current_coroutine->coroutine_context_.SwitchTo(
+      current_coroutine->caller_context_);
 }
 
 bool Coroutine::IsCompleted() const {
@@ -42,9 +44,7 @@ void Coroutine::Trampoline() {
 
   current_coroutine->is_completed_ = true;
 
-  current_coroutine->coroutine_context_.SwitchTo(
-      current_coroutine->caller_context_);
-
+  Coroutine::Suspend();
   std::abort();
 }
 

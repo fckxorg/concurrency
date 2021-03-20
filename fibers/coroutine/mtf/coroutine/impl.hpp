@@ -17,7 +17,6 @@ class Coroutine {
   // Non-copyable
   Coroutine(const Coroutine&) = delete;
   Coroutine& operator=(const Coroutine&) = delete;
-  Coroutine(Coroutine&& other) = default;
 
   void Resume();
 

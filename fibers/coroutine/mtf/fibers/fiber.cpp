@@ -28,7 +28,6 @@ class Fiber {
     scheduler.Submit(worker_routine_);
   }
 
-  Fiber(Fiber&& other) = default;
   Fiber(const Fiber& other) = delete;
 
   ~Fiber() {
