@@ -31,6 +31,7 @@ class ConditionVariable {
 
  private:
   twist::stdlike::atomic<uint32_t> state_;
+  // TODO counter for wait
 };
 
 }  // namespace solutions
