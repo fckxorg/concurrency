@@ -54,10 +54,10 @@ Result<size_t> Socket::ReadSome(MutableBuffer buffer) {
 
   waitee->Park();
 
-  if (error) {
-    return Fail(error);
-  } else {
+  if (!error) {
     return Ok(read_bytes);
+  } else {
+    return Fail(error);
   }
 }
 
@@ -65,13 +65,13 @@ Result<size_t> Socket::Read(MutableBuffer buffer) {
   auto read_some_result = ReadSome(buffer);
   size_t total_read = 0;
 
-  while (read_some_result.IsOk() &&
-         read_some_result.ValueOrThrow() == buffer.size()) {
+  while (read_some_result.IsOk() && total_read < buffer.size()) {
     total_read += read_some_result.ValueOrThrow();
     read_some_result = ReadSome(buffer);
   }
 
-  if (read_some_result.IsOk()) {
+  if (read_some_result.IsOk() ||
+      read_some_result.GetErrorCode() == asio::error::eof) {
     return Ok(total_read);
   } else {
     return read_some_result;
@@ -82,12 +82,12 @@ Status Socket::Write(ConstBuffer buffer) {
   auto waitee = std::make_shared<ParkingLot>();
   asio::error_code error{};
 
-  socket_.async_write_some(buffer,
-                           [waitee, &error](const asio::error_code asio_error,
-                                            size_t /*bytes_transfered*/) {
-                             error = std::move(asio_error);
-                             GetCurrentScheduler()->WakeOnAsyncComplete(waitee);
-                           });
+  asio::async_write(socket_, buffer,
+                    [waitee, &error](const asio::error_code asio_error,
+                                     size_t /*bytes_transfered*/) {
+                      error = std::move(asio_error);
+                      GetCurrentScheduler()->WakeOnAsyncComplete(waitee);
+                    });
 
   waitee->Park();
 
@@ -99,7 +99,13 @@ Status Socket::Write(ConstBuffer buffer) {
 }
 
 Status Socket::ShutdownWrite() {
-  return NotSupported();  // Your code goes here
+  asio::error_code error{};
+  socket_.shutdown(asio::socket_base::shutdown_send);
+  if (error) {
+    return Fail(error);
+  } else {
+    return Ok();
+  }
 }
 
 Socket::Socket(asio::ip::tcp::socket&& impl) : socket_(std::move(impl)) {

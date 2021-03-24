@@ -1,6 +1,7 @@
 #pragma once
 
 #include <asio/ip/tcp.hpp>
+#include <asio.hpp>
 
 #include <tinyfibers/net/buffer.hpp>
 
