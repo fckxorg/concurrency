@@ -60,24 +60,21 @@ void Scheduler::SleepFor(Duration delay) {
   auto timer = std::make_shared<WaitableTimer>(io_, delay);
   auto waitee = std::make_shared<ParkingLot>();
 
-  timer->async_wait([this, timer, waitee](const asio::error_code& error) {
-    this->WakeOnAsyncComplete(error, waitee);
+  timer->async_wait([this, timer, waitee](const asio::error_code& /*error*/) {
+    this->WakeOnAsyncComplete(waitee);
   });
 
   waitee->Park();
 }
 
-void Scheduler::WakeOnAsyncComplete(const asio::error_code& error,
-                                    std::shared_ptr<ParkingLot> waitee) {
-  if (!error) {
-    if (run_queue_.IsEmpty()) {
-      io_.post([this]() {
-        RunLoop();
-      });
-    }
-
-    waitee->Wake();
+void Scheduler::WakeOnAsyncComplete(std::shared_ptr<ParkingLot> waitee) {
+  if (run_queue_.IsEmpty()) {
+    io_.post([this]() {
+      RunLoop();
+    });
   }
+
+  waitee->Wake();
 }
 
 void Scheduler::Suspend() {

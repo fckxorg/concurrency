@@ -58,8 +58,23 @@ Status Acceptor::Listen(size_t backlog) {
 Result<Socket> Acceptor::Accept() {
   asio::io_context& io = Scheduler::GetIOContext();
   asio::ip::tcp::socket new_client{io};
-  acceptor_.async_accept(new_client, [](const asio::error_code& /*error*/) {});
-  return Ok(Socket(std::move(new_client)));  // Your code goes here
+
+  auto waitee = std::make_shared<ParkingLot>();
+
+  asio::error_code error{};
+
+  acceptor_.async_accept(new_client,
+                         [waitee, &error](const asio::error_code& asio_error) {
+                           error = std::move(asio_error);
+                           GetCurrentScheduler()->WakeOnAsyncComplete(waitee);
+                         });
+
+  waitee->Park();
+  if (error) {
+    return Fail(error);
+  } else {
+    return Ok(Socket(std::move(new_client)));
+  }
 }
 
 uint16_t Acceptor::GetPort() const {

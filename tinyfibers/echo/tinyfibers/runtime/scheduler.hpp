@@ -42,8 +42,7 @@ class Scheduler {
 
   Fiber* GetCurrentFiber();
 
-  void WakeOnAsyncComplete(const asio::error_code& error,
-                           std::shared_ptr<ParkingLot> waitee);
+  void WakeOnAsyncComplete(std::shared_ptr<ParkingLot> waitee);
 
   static asio::io_context& GetIOContext();
 

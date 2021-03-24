@@ -5,6 +5,7 @@
 #include <asio/ip/tcp.hpp>
 
 #include <wheels/support/result.hpp>
+#include <tinyfibers/runtime/parking_lot.hpp>
 
 namespace tinyfibers::net {
 
