@@ -65,8 +65,8 @@ Result<size_t> Socket::Read(MutableBuffer buffer) {
   auto read_some_result = ReadSome(buffer);
   size_t total_read = 0;
 
-  while (read_some_result.IsOk() && total_read < buffer.size() &&
-         read_some_result.ValueOrThrow() != 0) {
+  while (read_some_result.IsOk() && read_some_result.ValueOrThrow() != 0 &&
+         total_read <= buffer.size()) {
     total_read += read_some_result.ValueOrThrow();
     read_some_result = ReadSome(buffer);
   }
