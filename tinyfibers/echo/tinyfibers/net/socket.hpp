@@ -17,6 +17,9 @@ class Socket {
                                           uint16_t port);
   static wheels::Result<Socket> ConnectToLocal(uint16_t port);
 
+  static wheels::Result<Socket> Connect(asio::ip::tcp::endpoint endpoint,
+                                        uint16_t port);
+
   // Non-copyable
   Socket(const Socket&) = delete;
   Socket& operator=(const Socket&) = delete;
