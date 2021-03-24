@@ -62,7 +62,20 @@ Result<size_t> Socket::ReadSome(MutableBuffer buffer) {
 }
 
 Result<size_t> Socket::Read(MutableBuffer buffer) {
-  return ReadSome(buffer);
+  auto read_some_result = ReadSome(buffer);
+  size_t total_read = 0;
+
+  while (read_some_result.IsOk() &&
+         read_some_result.ValueOrThrow() == buffer.size()) {
+    total_read += read_some_result.ValueOrThrow();
+    read_some_result = ReadSome(buffer);
+  }
+
+  if (read_some_result.IsOk()) {
+    return Ok(total_read);
+  } else {
+    return read_some_result;
+  }
 }
 
 Status Socket::Write(ConstBuffer buffer) {
