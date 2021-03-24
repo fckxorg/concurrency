@@ -62,13 +62,17 @@ Result<size_t> Socket::ReadSome(MutableBuffer buffer) {
 }
 
 Result<size_t> Socket::Read(MutableBuffer buffer) {
-  auto read_some_result = ReadSome(buffer);
   size_t total_read = 0;
+  auto read_some_result =
+      ReadSome(MutableBuffer(static_cast<char*>(buffer.data()) + total_read,
+                             buffer.size() - total_read));
 
   while (read_some_result.IsOk() && read_some_result.ValueOrThrow() != 0 &&
-         total_read <= buffer.size()) {
+         total_read < buffer.size()) {
     total_read += read_some_result.ValueOrThrow();
-    read_some_result = ReadSome(buffer);
+    read_some_result =
+        ReadSome(MutableBuffer(static_cast<char*>(buffer.data()) + total_read,
+                               buffer.size() - total_read));
   }
 
   if (read_some_result.IsOk()) {
