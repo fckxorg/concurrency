@@ -29,7 +29,7 @@ Result<Socket> Socket::ConnectTo(const std::string& host, uint16_t port) {
       });
   waitee->Park();
   if (error) {
-    return Fail(error.code());
+    return Fail(error);
   } else {
     return Ok(Socket(std::move(new_client)));
   }
