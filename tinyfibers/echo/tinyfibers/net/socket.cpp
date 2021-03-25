@@ -15,12 +15,11 @@ using wheels::make_result::ToStatus;
 
 namespace tinyfibers::net {
 
-Result<Socket> Socket::ConnectTo(const std::string& host, uint16_t port) {
-  asio::ip::tcp::endpoint endpoint{asio::ip::address::from_string(host), port};
+Result<Socket> Socket::Connect(asio::ip::tcp::endpoint endpoint) {
   asio::ip::tcp::socket new_client{Scheduler::GetIOContext()};
+  asio::error_code error{};
 
   auto waitee = std::make_shared<ParkingLot>();
-  asio::error_code error{};
 
   new_client.async_connect(
       endpoint, [waitee, &error](const asio::error_code& asio_error) {
@@ -33,6 +32,31 @@ Result<Socket> Socket::ConnectTo(const std::string& host, uint16_t port) {
   } else {
     return Ok(Socket(std::move(new_client)));
   }
+}
+
+Result<Socket> Socket::ConnectTo(const std::string& host, uint16_t port) {
+  asio::ip::tcp::resolver resolver{Scheduler::GetIOContext()};
+
+  asio::error_code error{};
+
+  auto resolved = resolver.resolve(host, std::to_string(port), error);
+  if (error) {
+    return Fail(error);
+  }
+
+  auto new_socket = Connect(resolved.begin()->endpoint());
+  if (new_socket.IsOk()) {
+    return new_socket;
+  }
+
+  for (auto entry = ++resolved.begin(); entry != resolved.end(); ++entry) {
+    new_socket = Connect(entry->endpoint());
+    if (new_socket.IsOk()) {
+      break;
+    }
+  }
+
+  return new_socket;
 }
 
 Result<Socket> Socket::ConnectToLocal(uint16_t port) {

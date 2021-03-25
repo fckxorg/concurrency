@@ -6,6 +6,7 @@
 #include <tinyfibers/net/buffer.hpp>
 
 #include <wheels/support/result.hpp>
+#include <string>
 
 namespace tinyfibers::net {
 
@@ -17,8 +18,7 @@ class Socket {
                                           uint16_t port);
   static wheels::Result<Socket> ConnectToLocal(uint16_t port);
 
-  static wheels::Result<Socket> Connect(asio::ip::tcp::endpoint endpoint,
-                                        uint16_t port);
+  static wheels::Result<Socket> Connect(asio::ip::tcp::endpoint endpoint);
 
   // Non-copyable
   Socket(const Socket&) = delete;
