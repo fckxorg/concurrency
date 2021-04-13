@@ -25,7 +25,9 @@ StaticThreadPool::StaticThreadPool(size_t n_workers, const std::string& label)
 }
 
 StaticThreadPool::~StaticThreadPool() {
-  assert(finished_);
+  if (!finished_) {
+    Shutdown();
+  }
 }
 
 void StaticThreadPool::Execute(Task&& new_task) {
