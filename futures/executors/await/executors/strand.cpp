@@ -2,6 +2,7 @@
 #include <await/executors/helpers.hpp>
 
 #include <twist/stdlike/atomic.hpp>
+#include <await/executors/guarded.hpp>
 
 #include <queue>
 #include <memory>
@@ -9,58 +10,49 @@
 
 namespace await::executors {
 
-class Strand : public IExecutor {
+class Strand : public IExecutor,
+               public std::enable_shared_from_this<IExecutor> {
  private:
-  using QueuePtr = std::shared_ptr<std::queue<Task>>;
-
-  QueuePtr tasks_;  // guarded by mutex_
+  Guarded<std::queue<Task>> tasks_;  // guarded by mutex_
   IExecutorPtr executor_;
-  std::mutex mutex_;
-  std::shared_ptr<int> batch_sent_;  // should be kept alive with shared pointer
+  bool batch_sent_;  // should be kept alive with shared pointer
 
-  Task dequeItem(QueuePtr task_queue) {
-    std::lock_guard lock(mutex_);
-    Task routine = std::move(task_queue->front());
-    task_queue->pop();
+  Task dequeItem() {
+    Task routine = std::move(tasks_->front());
+    tasks_->pop();
 
     return routine;
   }
 
  public:
   Strand(IExecutorPtr executor) : executor_(executor), batch_sent_(false) {
-    tasks_ = std::make_shared<std::queue<Task>>();
-    batch_sent_ = std::make_shared<int>(0);
   }
 
-  void ExecutorRoutine(QueuePtr alive_queue, std::shared_ptr<int> batch_flag) {
-    executor_->Execute([this, alive_queue, batch_flag]() {
+  void ExecutorRoutine() {
+    executor_->Execute([self = shared_from_this(), this]() {
       int completed = 0;
 
       while (completed < 50) {
-        {
-          std::lock_guard lock(mutex_);
-          if (alive_queue->empty()) {
-            *batch_flag = 0;
-            return;
-          }
+        if (tasks_->empty()) {
+          batch_sent_ = false;
+          return;
         }
-        Task routine = dequeItem(alive_queue);
+        Task routine = dequeItem();
         ExecuteHere(routine);
         ++completed;
       }
-      ExecutorRoutine(alive_queue, batch_flag);
+      ExecutorRoutine();
     });
   }
 
   void Execute(Task&& task) {
-    std::lock_guard lock(mutex_);
     tasks_->push(std::move(task));
 
-    if (!batch_sent_.load()) {
-      *batch_sent_ = 1;
+    if (!batch_sent_) {
+      batch_sent_ = true;
 
       if (!tasks_->empty()) {
-        ExecutorRoutine(tasks_, batch_sent_);
+        ExecutorRoutine();
       }
     }
   }
