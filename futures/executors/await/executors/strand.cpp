@@ -11,58 +11,56 @@ namespace await::executors {
 
 class Strand : public IExecutor {
  private:
-  std::shared_ptr<std::queue<Task>> tasks_;  // guarded by mutex_
+  using QueuePtr = std::shared_ptr<std::queue<Task>>;
+
+  QueuePtr tasks_;  // guarded by mutex_
   IExecutorPtr executor_;
   std::mutex mutex_;
-  twist::stdlike::atomic<uint32_t> batch_sent_;
+  std::shared_ptr<int> batch_sent_;  // should be kept alive with shared pointer
+
+  Task dequeItem(QueuePtr task_queue) {
+    std::lock_guard lock(mutex_);
+    Task routine = std::move(task_queue->front());
+    task_queue->pop();
+
+    return routine;
+  }
 
  public:
   Strand(IExecutorPtr executor) : executor_(executor), batch_sent_(false) {
     tasks_ = std::make_shared<std::queue<Task>>();
+    batch_sent_ = std::make_shared<int>(0);
   }
 
-  void ExecutorRoutine() {
-    auto task_queue_ = std::shared_ptr(tasks_);
-
-    executor_->Execute([this, task_queue_]() {
+  void ExecutorRoutine(QueuePtr alive_queue, std::shared_ptr<int> batch_flag) {
+    executor_->Execute([this, alive_queue, batch_flag]() {
       int completed = 0;
 
       while (completed < 50) {
-        Task routine;
         {
           std::lock_guard lock(mutex_);
-          if (task_queue_->empty()) {
-            break;
+          if (alive_queue->empty()) {
+            *batch_flag = 0;
+            return;
           }
-          routine = std::move(task_queue_->front());
-          task_queue_->pop();
         }
-
+        Task routine = dequeItem(alive_queue);
         ExecuteHere(routine);
         ++completed;
       }
-
-      std::lock_guard lock(mutex) {
-        if (!task_queue_->empty()) {
-          ExecutorRoutine();
-        } else {
-          batch_sent_.store(0);
-        }
-      }
+      ExecutorRoutine(alive_queue, batch_flag);
     });
   }
 
   void Execute(Task&& task) {
-    {
-      std::lock_guard lock(mutex_);
-      tasks_->push(std::move(task));
-    }
+    std::lock_guard lock(mutex_);
+    tasks_->push(std::move(task));
 
     if (!batch_sent_.load()) {
-      batch_sent_.store(1);
+      *batch_sent_ = 1;
 
       if (!tasks_->empty()) {
-        ExecutorRoutine();
+        ExecutorRoutine(tasks_, batch_sent_);
       }
     }
   }
