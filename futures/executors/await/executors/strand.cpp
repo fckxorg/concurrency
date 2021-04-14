@@ -41,12 +41,8 @@ class Strand : public IExecutor {
         ExecuteHere(routine);
         ++completed;
       }
-
-      if (!task_queue_->empty()) {
-        ExecutorRoutine();
-      } else {
-        batch_sent_.store(0);
-      }
+      batch_sent_.store(0);
+      ExecutorRoutine();
     });
   }
 
