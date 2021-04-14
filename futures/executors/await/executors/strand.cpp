@@ -32,7 +32,6 @@ class Strand : public IExecutor {
         {
           std::lock_guard lock(mutex_);
           if (task_queue_->empty()) {
-            batch_sent_.store(0);
             break;
           }
           routine = std::move(task_queue_->front());
@@ -42,8 +41,13 @@ class Strand : public IExecutor {
         ExecuteHere(routine);
         ++completed;
       }
-      if (batch_sent_.load()) {
-        ExecutorRoutine();
+
+      std::lock_guard lock(mutex) {
+        if (!task_queue_->empty()) {
+          ExecutorRoutine();
+        } else {
+          batch_sent_.store(0);
+        }
       }
     });
   }
