@@ -17,7 +17,7 @@ StaticThreadPool::StaticThreadPool(size_t n_workers, const std::string& label)
     : runners_(0), executed_task_count_(0), finished_(false) {
   no_tasks_left_.store(0);
   for (size_t i = 0; i < n_workers; ++i) {
-    workers_.emplace_back([this, &label]() {
+    workers_.emplace_back([this, label]() {
       LabelThread(label);
       WorkerRoutine();
     });

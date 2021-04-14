@@ -1,34 +1,74 @@
 #include <await/executors/strand.hpp>
 #include <await/executors/helpers.hpp>
-#include <await/executors/guarded.hpp>
+
+#include <twist/stdlike/atomic.hpp>
+
 #include <queue>
+#include <memory>
+#include <mutex>
 
 namespace await::executors {
 
 class Strand : public IExecutor {
  private:
-  Guarded<std::queue<Task>> tasks_;
+  std::shared_ptr<std::queue<Task>> tasks_;  // guarded by mutex_
   IExecutorPtr executor_;
+  std::mutex mutex_;
+  twist::stdlike::atomic<uint32_t> batch_sent_;
 
  public:
-  Strand(IExecutorPtr executor) : executor_(executor) {
+  Strand(IExecutorPtr executor) : executor_(executor), batch_sent_(false) {
+    tasks_ = std::make_shared<std::queue<Task>>();
   }
 
-  void Execute(Task&& task) {
-    tasks_.push(std::move(task));
+  void ExecutorRoutine() {
+    auto task_queue_ = std::shared_ptr(tasks_);
 
-    executor_->Execute([this]() {
-      Task routine = std::move(tasks_->front());
-      tasks_->pop();
-      routine();
+    executor_->Execute([this, task_queue_]() {
+      int completed = 0;
+
+      while (completed < 50) {
+        Task routine;
+        {
+          std::lock_guard lock(mutex_);
+          if (task_queue_->empty()) {
+            break;
+          }
+          routine = std::move(task_queue_->front());
+          task_queue_->pop();
+        }
+
+        ExecuteHere(routine);
+        ++completed;
+      }
+
+      if (!task_queue_->empty()) {
+        ExecutorRoutine();
+      } else {
+        batch_sent_.store(0);
+      }
     });
   }
 
-}
+  void Execute(Task&& task) {
+    {
+      std::lock_guard lock(mutex_);
+      tasks_->push(std::move(task));
+    }
 
-IExecutorPtr
-MakeStrand(IExecutorPtr /*executor*/) {
-  return nullptr;  // Not implemented
+    if (!batch_sent_.load()) {
+      batch_sent_.store(1);
+
+      if (!tasks_->empty()) {
+        ExecutorRoutine();
+      }
+    }
+  }
+};
+
+IExecutorPtr MakeStrand(IExecutorPtr executor) {
+  return dynamic_pointer_cast<IExecutor, Strand>(
+      std::make_shared<Strand>(executor));
 }
 
 }  // namespace await::executors
