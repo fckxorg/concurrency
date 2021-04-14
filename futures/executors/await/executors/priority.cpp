@@ -16,7 +16,7 @@ class PriorityTask {
       : routine_(std::move(routine)), priority_(priority) {
   }
 
-  const Task& getTask() const {
+  const Task& GetTask() const {
     return routine_;
   }
 
@@ -48,7 +48,8 @@ class PriorityExecutor : public IPriorityExecutor {
     task_queue_->emplace(std::move(task), priority);
 
     wrapped_->Execute([this]() {
-      Task routine = std::move(const_cast<Task&>(task_queue_->top().getTask()));
+      Task routine =
+          std::move(const_cast<Task&>(task_queue_->top().GetTask()));  // NOLINT
       task_queue_->pop();
 
       routine();

@@ -10,14 +10,13 @@
 
 namespace await::executors {
 
-class Strand : public IExecutor,
-               public std::enable_shared_from_this<IExecutor> {
+class Strand : public IExecutor, public std::enable_shared_from_this<Strand> {
  private:
   Guarded<std::queue<Task>> tasks_;  // guarded by mutex_
   IExecutorPtr executor_;
   bool batch_sent_;  // should be kept alive with shared pointer
 
-  Task dequeItem() {
+  Task DequeItem() {
     Task routine = std::move(tasks_->front());
     tasks_->pop();
 
@@ -29,19 +28,20 @@ class Strand : public IExecutor,
   }
 
   void ExecutorRoutine() {
-    executor_->Execute([self = shared_from_this(), this]() {
+    executor_->Execute([self = shared_from_this()]() {
+      const int batch_size = 50;
       int completed = 0;
 
-      while (completed < 50) {
-        if (tasks_->empty()) {
-          batch_sent_ = false;
+      while (completed < batch_size) {
+        if (self->tasks_->empty()) {
+          self->batch_sent_ = false;
           return;
         }
-        Task routine = dequeItem();
+        Task routine = self->DequeItem();
         ExecuteHere(routine);
         ++completed;
       }
-      ExecutorRoutine();
+      self->ExecutorRoutine();
     });
   }
 
