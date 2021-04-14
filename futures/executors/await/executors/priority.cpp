@@ -1,7 +1,6 @@
 #include <await/executors/priority.hpp>
-#include <twist/stdlike/mutex.hpp>
+#include <await/executors/guarded.hpp>
 
-#include <mutex>
 #include <queue>
 #include <memory>
 
@@ -38,8 +37,7 @@ class FixedPriorityExecutor;
 
 class PriorityExecutor : public IPriorityExecutor {
  private:
-  std::priority_queue<PriorityTask> task_queue_;  // guarded by mutex_
-  twist::stdlike::mutex mutex_;
+  Guarded<std::priority_queue<PriorityTask>> task_queue_;
   IExecutorPtr wrapped_;
 
  public:
@@ -47,16 +45,11 @@ class PriorityExecutor : public IPriorityExecutor {
   }
 
   void Execute(int priority, Task&& task) {
-    std::unique_lock lock(mutex_);
-    task_queue_.emplace(std::move(task), priority);
-    lock.unlock();
+    task_queue_->emplace(std::move(task), priority);
 
     wrapped_->Execute([this]() {
-      std::unique_lock lock(mutex_);
-
-      Task routine = std::move(const_cast<Task&>(task_queue_.top().getTask()));
-      task_queue_.pop();
-      lock.unlock();
+      Task routine = std::move(const_cast<Task&>(task_queue_->top().getTask()));
+      task_queue_->pop();
 
       routine();
     });
