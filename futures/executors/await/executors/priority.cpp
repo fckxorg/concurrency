@@ -35,7 +35,8 @@ class PriorityTask {
 
 class FixedPriorityExecutor;
 
-class PriorityExecutor : public IPriorityExecutor {
+class PriorityExecutor : public IPriorityExecutor,
+                         public std::enable_shared_from_this<PriorityExecutor> {
  private:
   Guarded<std::priority_queue<PriorityTask>> task_queue_;
   IExecutorPtr wrapped_;
@@ -47,10 +48,10 @@ class PriorityExecutor : public IPriorityExecutor {
   void Execute(int priority, Task&& task) {
     task_queue_->emplace(std::move(task), priority);
 
-    wrapped_->Execute([this]() {
-      Task routine =
-          std::move(const_cast<Task&>(task_queue_->top().GetTask()));  // NOLINT
-      task_queue_->pop();
+    wrapped_->Execute([self = shared_from_this()]() {
+      Task routine = std::move(
+          const_cast<Task&>(self->task_queue_->top().GetTask()));  // NOLINT
+      self->task_queue_->pop();
 
       routine();
     });
