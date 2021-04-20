@@ -7,6 +7,7 @@
 #include <queue>
 #include <memory>
 #include <mutex>
+#include <cstdint>
 
 namespace await::executors {
 
@@ -14,7 +15,8 @@ class Strand : public IExecutor, public std::enable_shared_from_this<Strand> {
  private:
   Guarded<std::queue<Task>> tasks_;  // guarded by mutex_
   IExecutorPtr executor_;
-  bool batch_sent_;  // should be kept alive with shared pointer
+  twist::stdlike::atomic<uint32_t>
+      batch_sent_;  // should be kept alive with shared pointer
 
   Task DequeItem() {
     Task routine = std::move(tasks_->front());
@@ -24,7 +26,7 @@ class Strand : public IExecutor, public std::enable_shared_from_this<Strand> {
   }
 
  public:
-  Strand(IExecutorPtr executor) : executor_(executor), batch_sent_(false) {
+  Strand(IExecutorPtr executor) : executor_(executor), batch_sent_(0u) {
   }
 
   void ExecutorRoutine() {
@@ -34,7 +36,7 @@ class Strand : public IExecutor, public std::enable_shared_from_this<Strand> {
 
       while (completed < batch_size) {
         if (self->tasks_->empty()) {
-          self->batch_sent_ = false;
+          self->batch_sent_.store(0);
           return;
         }
         Task routine = self->DequeItem();
@@ -48,12 +50,8 @@ class Strand : public IExecutor, public std::enable_shared_from_this<Strand> {
   void Execute(Task&& task) {
     tasks_->push(std::move(task));
 
-    if (!batch_sent_) {
-      batch_sent_ = true;
-
-      if (!tasks_->empty()) {
-        ExecutorRoutine();
-      }
+    if (batch_sent_.exchange(1) == 0u) {
+      ExecutorRoutine();
     }
   }
 };
