@@ -2,6 +2,7 @@
 
 #include <mtf/fibers/core/handle.hpp>
 #include <mtf/fibers/core/suspend.hpp>
+#include <mtf/fibers/sync/wait_queue.hpp>
 
 #include <twist/stdlike/atomic.hpp>
 
@@ -24,20 +25,19 @@ class FutexLike : public twist::stdlike::atomic<T> {
   }
 
   // Park current fiber if value of atomic is equal to `old`
-  void ParkIfEqual(T /*old*/) {
-    // Not implemented
+  void ParkIfEqual(T old) {
+    if (this->load() == old) {
+      WaitQueue::Park(this);
+    }
   }
 
   void WakeOne() {
-    // Not implemented
+    WaitQueue::WakeOne(this);
   }
 
   void WakeAll() {
-    // Not implemented
+    WaitQueue::WakeAll(this);
   }
-
- private:
-  // ???
 };
 
 }  // namespace mtf::fibers

@@ -35,7 +35,8 @@ void Fiber::Yield() {
 }
 
 void Fiber::Suspend() {
-  // Not implemented
+  state_ = Suspended;
+  Yield();
 }
 
 void Fiber::Resume() {
@@ -48,17 +49,20 @@ void Fiber::Resume() {
 void Fiber::Schedule() {
   sched_.Submit([this]() {
     current_ = this;
+    state_ = Running;
     fiber_routine_.Resume();
     Reschedule();
   });
 }
 
 void Fiber::Reschedule() {
-  if (!fiber_routine_.IsCompleted()) {
-    Schedule();
-    // tp::StaticThreadPool::Current()->Submit(std::move(worker_routine_));
-  } else {
+  if (fiber_routine_.IsCompleted()) {
+    state_ = Terminated;
     Destroy();
+  } else {
+    if (state_ == Running) {
+      Resume();
+    }
   }
 }
 
