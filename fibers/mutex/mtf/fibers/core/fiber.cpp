@@ -35,8 +35,9 @@ void Fiber::Yield() {
   mtf::coroutine::impl::Coroutine::Suspend();
 }
 
-void Fiber::Suspend() {
+void Fiber::Suspend(Awaiter* awaiter) {
   state_ = Suspended;
+  awaiter_ = awaiter;
   Yield();
 }
 
@@ -63,6 +64,9 @@ void Fiber::Reschedule() {
   } else {
     if (state_ == Running) {
       Resume();
+    }
+    if (state_ == Suspended) {
+      awaiter_->AwaitSuspend(FiberHandle(this));
     }
   }
 }

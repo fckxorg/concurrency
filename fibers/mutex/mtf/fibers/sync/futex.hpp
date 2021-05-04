@@ -3,36 +3,20 @@
 #include <mtf/fibers/core/handle.hpp>
 #include <mtf/fibers/core/suspend.hpp>
 
+#include <mutex>
 #include <twist/stdlike/atomic.hpp>
+#include <twist/stdlike/mutex.hpp>
 
 #include <wheels/support/intrusive_list.hpp>
 
-#include <queue>
-
 namespace mtf::fibers {
-
-// https://eli.thegreenplace.net/2018/basics-of-futexes/
-class Awaiter : public wheels::IntrusiveListNode<Awaiter> {
- private:
-  wheels::IntrusiveList<Awaiter>* queue_;
-  FiberHandle* handle_;
-
- public:
-  Awaiter(wheels::IntrusiveList<Awaiter>* futex) : queue_(futex) {
-  }
-  void AwaitSuspend(FiberHandle* handle) {
-    handle_ = handle;
-    queue_->PushBack(this);
-    handle_->Suspend();
-  }
-  void AwaitResume() {
-    handle_->Resume();
-  }
-};
 
 template <typename T>
 class FutexLike : public twist::stdlike::atomic<T>,
                   public wheels::IntrusiveList<Awaiter> {
+ private:
+  twist::stdlike::mutex mutex_;
+
  public:
   explicit FutexLike(T initial_value)
       : twist::stdlike::atomic<T>(initial_value) {
@@ -45,20 +29,24 @@ class FutexLike : public twist::stdlike::atomic<T>,
 
   // Park current fiber if value of atomic is equal to `old`
   void ParkIfEqual(T old) {
+    std::unique_lock lock(mutex_);
     if (this->load() == old) {
-      Awaiter awaiter{this};
+      Awaiter awaiter{this, lock};
+
       auto handle = FiberHandle::FromCurrent();
-      awaiter.AwaitSuspend(&handle);
+      handle.Suspend(&awaiter);
     }
   }
 
   void WakeOne() {
+    std::lock_guard lock(mutex_);
     if (this->Size()) {
       this->PopFront()->AwaitResume();
     }
   }
 
   void WakeAll() {
+    std::lock_guard lock(mutex_);
     for (auto size = this->Size(); size >= 0; --size) {
       this->PopFront()->AwaitResume();
     }

@@ -16,9 +16,8 @@ FiberHandle FiberHandle::FromCurrent() {
   return FiberHandle(&fiber);
 }
 
-void FiberHandle::Suspend() {
-  WHEELS_VERIFY(IsValid(), "Invalid fiber handle");
-  reinterpret_cast<Fiber*>(fiber_)->Suspend();
+void FiberHandle::Suspend(Awaiter* awaiter) {
+  reinterpret_cast<Fiber*>(fiber_)->Suspend(awaiter);
 }
 
 }  // namespace mtf::fibers

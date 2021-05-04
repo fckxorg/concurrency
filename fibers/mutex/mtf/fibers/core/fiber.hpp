@@ -4,12 +4,14 @@
 
 #include <mtf/coroutine/impl.hpp>
 #include <context/stack.hpp>
+#include <mtf/fibers/core/handle.hpp>
 
 namespace mtf::fibers {
 
 class Fiber {
  private:
   enum State { Suspended, Runnable, Running, Terminated };
+  Awaiter* awaiter_;
 
  public:
   Fiber(Routine routine, Scheduler& scheduler);
@@ -22,7 +24,7 @@ class Fiber {
   static void Spawn(Routine routine, Scheduler& scheduler);
 
   void Yield();
-  void Suspend();  // Better API?
+  void Suspend(Awaiter* awaiter);  // Better API?
   void Resume();
 
  private:
