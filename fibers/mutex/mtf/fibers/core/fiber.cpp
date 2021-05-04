@@ -22,6 +22,7 @@ Fiber::Fiber(Routine routine, Scheduler& scheduler)
 }
 
 Fiber::~Fiber() {
+  StackPool::ReturnStack(std::move(stack_));
 }
 
 void Fiber::Spawn(Routine routine, Scheduler& scheduler) {
@@ -66,9 +67,10 @@ void Fiber::Reschedule() {
   }
 }
 
+/*
 void Fiber::Await() {
-  // Not implemented
 }
+*/
 
 void Fiber::Destroy() {
   delete this;

@@ -8,7 +8,17 @@ namespace mtf::fibers {
 
 void FiberHandle::Resume() {
   WHEELS_VERIFY(IsValid(), "Invalid fiber handle");
-  // Not implemented
+  reinterpret_cast<Fiber*>(fiber_)->Resume();
+}
+
+FiberHandle FiberHandle::FromCurrent() {
+  Fiber& fiber = Fiber::AccessCurrent();
+  return FiberHandle(&fiber);
+}
+
+void FiberHandle::Suspend() {
+  WHEELS_VERIFY(IsValid(), "Invalid fiber handle");
+  reinterpret_cast<Fiber*>(fiber_)->Suspend();
 }
 
 }  // namespace mtf::fibers

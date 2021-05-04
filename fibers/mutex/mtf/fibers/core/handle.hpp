@@ -16,6 +16,10 @@ class FiberHandle {
     return FiberHandle(nullptr);
   }
 
+  static FiberHandle FromCurrent();
+
+  void Suspend();
+
   bool IsValid() const {
     return fiber_ != nullptr;
   }
