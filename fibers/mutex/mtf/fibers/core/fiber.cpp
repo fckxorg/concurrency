@@ -58,6 +58,7 @@ void Fiber::Schedule() {
     current_ = this;
     state_ = Running;
     fiber_routine_.Resume();
+    current_ = nullptr;
 
     if (awaiter_) {
       awaiter_->AwaitSuspend(FiberHandle(this));
