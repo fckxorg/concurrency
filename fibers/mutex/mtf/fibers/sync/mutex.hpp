@@ -1,10 +1,8 @@
 #pragma once
 
 #include <mtf/fibers/sync/futex.hpp>
-#include <twist/stdlike/atomic.hpp>
 
 namespace mtf::fibers {
-
 class Mutex {
  public:
   void Lock() {
@@ -23,8 +21,6 @@ class Mutex {
     }
   }
 
-  // BasicLockable concept
-
   void lock() {  // NOLINT
     Lock();
   }
@@ -34,7 +30,7 @@ class Mutex {
   }
 
  private:
-  FutexLike<uint32_t> locked_{0};
+  FutexLike<unsigned int> locked_{0};
   twist::stdlike::atomic<unsigned int> n_threads_{0};
 };
 

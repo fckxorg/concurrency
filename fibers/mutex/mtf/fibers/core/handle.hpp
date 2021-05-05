@@ -2,6 +2,7 @@
 #include <twist/stdlike/mutex.hpp>
 #include <mutex>
 #include <wheels/support/intrusive_list.hpp>
+#include <mtf/support/spinlock.hpp>
 
 namespace mtf::fibers {
 
@@ -35,19 +36,19 @@ class FiberHandle : public wheels::IntrusiveListNode<FiberHandle> {
 class Awaiter {
  private:
   wheels::IntrusiveList<FiberHandle>* queue_;
-  twist::stdlike::mutex& mutex_;
+  mtf::support::SpinLock& lock_;
   FiberHandle handle_;
 
  public:
   Awaiter(wheels::IntrusiveList<FiberHandle>* queue,
-          twist::stdlike::mutex& mutex)
-      : queue_(queue), mutex_(mutex) {
+          mtf::support::SpinLock& lock)
+      : queue_(queue), lock_(lock) {
   }
 
   void AwaitSuspend(FiberHandle handle) {
     handle_ = handle;
     queue_->PushBack(&handle_);
-    mutex_.unlock();
+    lock_.unlock();
   }
   void AwaitResume() {
     delete this;

@@ -8,11 +8,14 @@ namespace mtf::support {
 class SpinLock {
  public:
   void Lock() {
-    // Not implemented
+    twist::util::SpinWait spin_wait;
+    while (locked_.exchange(1)) {
+      spin_wait();
+    }
   }
 
   void Unlock() {
-    // Not implemented
+    locked_.store(0);
   }
 
   // NOLINTNEXTLINE
@@ -26,7 +29,7 @@ class SpinLock {
   }
 
  private:
-  // ???
+  twist::stdlike::atomic<uint32_t> locked_{0};
 };
 
 }  // namespace mtf::support

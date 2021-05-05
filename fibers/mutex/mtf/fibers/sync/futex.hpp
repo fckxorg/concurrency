@@ -5,7 +5,6 @@
 
 #include <mutex>
 #include <twist/stdlike/atomic.hpp>
-#include <twist/stdlike/mutex.hpp>
 
 #include <wheels/support/intrusive_list.hpp>
 
@@ -15,7 +14,7 @@ template <typename T>
 class FutexLike : public twist::stdlike::atomic<T>,
                   public wheels::IntrusiveList<FiberHandle> {
  private:
-  twist::stdlike::mutex mutex_;
+  mtf::support::SpinLock mutex_;
 
  public:
   explicit FutexLike(T initial_value)
@@ -34,6 +33,7 @@ class FutexLike : public twist::stdlike::atomic<T>,
       mutex_.unlock();
       return;
     }
+
     Awaiter* awaiter = new Awaiter{this, mutex_};
     Suspend(awaiter);
   }
