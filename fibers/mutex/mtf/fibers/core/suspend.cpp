@@ -4,8 +4,8 @@
 
 namespace mtf::fibers {
 
-void Suspend() {
-  // Not implemented
+void Suspend(Awaiter* awaiter) {
+  Fiber::AccessCurrent().Suspend(awaiter);
 }
 
 }  // namespace mtf::fibers

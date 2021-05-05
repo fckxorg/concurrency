@@ -11,11 +11,6 @@ void FiberHandle::Resume() {
   reinterpret_cast<Fiber*>(fiber_)->Resume();
 }
 
-FiberHandle FiberHandle::FromCurrent() {
-  Fiber& fiber = Fiber::AccessCurrent();
-  return FiberHandle(&fiber);
-}
-
 void FiberHandle::Suspend(Awaiter* awaiter) {
   reinterpret_cast<Fiber*>(fiber_)->Suspend(awaiter);
 }

@@ -13,7 +13,7 @@ namespace mtf::fibers {
 
 template <typename T>
 class FutexLike : public twist::stdlike::atomic<T>,
-                  public wheels::IntrusiveList<Awaiter> {
+                  public wheels::IntrusiveList<FiberHandle> {
  private:
   twist::stdlike::mutex mutex_;
 
@@ -29,26 +29,26 @@ class FutexLike : public twist::stdlike::atomic<T>,
 
   // Park current fiber if value of atomic is equal to `old`
   void ParkIfEqual(T old) {
-    std::unique_lock lock(mutex_);
-    if (this->load() == old) {
-      Awaiter awaiter{this, lock};
-
-      auto handle = FiberHandle::FromCurrent();
-      handle.Suspend(&awaiter);
+    mutex_.lock();
+    if (this->load() != old) {
+      mutex_.unlock();
+      return;
     }
+    Awaiter* awaiter = new Awaiter{this, mutex_};
+    Suspend(awaiter);
   }
 
   void WakeOne() {
     std::lock_guard lock(mutex_);
     if (this->Size()) {
-      this->PopFront()->AwaitResume();
+      this->PopFront()->Resume();
     }
   }
 
   void WakeAll() {
     std::lock_guard lock(mutex_);
     for (auto size = this->Size(); size >= 0; --size) {
-      this->PopFront()->AwaitResume();
+      this->PopFront()->Resume();
     }
   }
 };

@@ -8,7 +8,7 @@ namespace mtf::fibers {
 class Awaiter;
 
 // Lightweight non-owning handle to the fiber object
-class FiberHandle {
+class FiberHandle : public wheels::IntrusiveListNode<FiberHandle> {
  public:
   explicit FiberHandle(void* fiber) : fiber_(fiber) {
   }
@@ -19,8 +19,6 @@ class FiberHandle {
   static FiberHandle Invalid() {
     return FiberHandle(nullptr);
   }
-
-  static FiberHandle FromCurrent();
 
   bool IsValid() const {
     return fiber_ != nullptr;
@@ -34,23 +32,25 @@ class FiberHandle {
   void* fiber_;
 };
 
-class Awaiter : public wheels::IntrusiveListNode<Awaiter> {
+class Awaiter {
  private:
+  wheels::IntrusiveList<FiberHandle>* queue_;
+  twist::stdlike::mutex& mutex_;
   FiberHandle handle_;
-  std::unique_lock<twist::stdlike::mutex>& mutex_;
 
  public:
-  Awaiter(wheels::IntrusiveList<Awaiter>* futex,
-          std::unique_lock<twist::stdlike::mutex>& mutex)
-      : mutex_(mutex) {
-    futex->PushBack(this);
+  Awaiter(wheels::IntrusiveList<FiberHandle>* queue,
+          twist::stdlike::mutex& mutex)
+      : queue_(queue), mutex_(mutex) {
   }
+
   void AwaitSuspend(FiberHandle handle) {
     handle_ = handle;
+    queue_->PushBack(&handle_);
     mutex_.unlock();
   }
   void AwaitResume() {
-    handle_.Resume();
+    delete this;
   }
 };
 

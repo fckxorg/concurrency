@@ -11,7 +11,7 @@ namespace mtf::fibers {
 class Fiber {
  private:
   enum State { Suspended, Runnable, Running, Terminated };
-  Awaiter* awaiter_;
+  Awaiter* awaiter_{nullptr};
 
  public:
   Fiber(Routine routine, Scheduler& scheduler);

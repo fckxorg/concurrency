@@ -42,8 +42,13 @@ void Fiber::Suspend(Awaiter* awaiter) {
 }
 
 void Fiber::Resume() {
-  state_ = Runnable;
-  Schedule();
+  if (awaiter_) {
+    awaiter_->AwaitResume();
+  }
+
+  awaiter_ = nullptr;
+  state_ = Running;
+  Reschedule();
 }
 
 // Scheduler ops
@@ -63,10 +68,14 @@ void Fiber::Reschedule() {
     Destroy();
   } else {
     if (state_ == Running) {
-      Resume();
+      Step();
     }
+
     if (state_ == Suspended) {
-      awaiter_->AwaitSuspend(FiberHandle(this));
+      if (awaiter_) {
+        awaiter_->AwaitSuspend(FiberHandle(this));
+        awaiter_ = nullptr;
+      }
     }
   }
 }
@@ -81,7 +90,8 @@ void Fiber::Destroy() {
 }
 
 void Fiber::Step() {
-  // Not implemented
+  state_ = Runnable;
+  Schedule();
 }
 
 void Fiber::Stop() {
