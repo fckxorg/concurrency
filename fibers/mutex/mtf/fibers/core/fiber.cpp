@@ -8,7 +8,7 @@
 
 namespace mtf::fibers {
 
-Fiber* Fiber::current_{nullptr};
+thread_local Fiber* Fiber::current_{nullptr};
 
 Fiber& Fiber::AccessCurrent() {
   return *current_;
