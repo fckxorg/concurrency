@@ -18,7 +18,7 @@ Fiber::Fiber(Routine routine, Scheduler& scheduler)
     : stack_(StackPool::TakeStack()),
       fiber_routine_(std::move(routine), stack_.View()),
       sched_(scheduler) {
-  Resume();
+  Schedule();
 }
 
 Fiber::~Fiber() {
@@ -32,7 +32,7 @@ void Fiber::Spawn(Routine routine, Scheduler& scheduler) {
 // System calls
 
 void Fiber::Yield() {
-  mtf::coroutine::impl::Coroutine::Suspend();
+  fiber_routine_.Suspend();
 }
 
 void Fiber::Suspend(Awaiter* awaiter) {
@@ -44,9 +44,9 @@ void Fiber::Suspend(Awaiter* awaiter) {
 void Fiber::Resume() {
   if (awaiter_) {
     awaiter_->AwaitResume();
+    awaiter_ = nullptr;
   }
 
-  awaiter_ = nullptr;
   state_ = Running;
   Reschedule();
 }
@@ -58,7 +58,12 @@ void Fiber::Schedule() {
     current_ = this;
     state_ = Running;
     fiber_routine_.Resume();
-    Reschedule();
+
+    if (awaiter_) {
+      awaiter_->AwaitSuspend(FiberHandle(this));
+    } else {
+      Reschedule();
+    }
   });
 }
 
@@ -67,15 +72,8 @@ void Fiber::Reschedule() {
     state_ = Terminated;
     Destroy();
   } else {
-    if (state_ == Running) {
+    if (state_ != Suspended) {
       Step();
-    }
-
-    if (state_ == Suspended) {
-      if (awaiter_) {
-        awaiter_->AwaitSuspend(FiberHandle(this));
-        awaiter_ = nullptr;
-      }
     }
   }
 }
