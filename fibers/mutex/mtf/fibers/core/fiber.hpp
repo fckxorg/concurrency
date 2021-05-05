@@ -39,7 +39,7 @@ class Fiber {
   context::Stack stack_;
   mtf::coroutine::impl::Coroutine fiber_routine_;
   mtf::tp::Task worker_routine_;
-  static thread_local Fiber* current_;
+  static thread_local Fiber* current;
   Scheduler& sched_;
   State state_;
 };

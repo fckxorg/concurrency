@@ -9,7 +9,7 @@ class SpinLock {
  public:
   void Lock() {
     twist::util::SpinWait spin_wait;
-    while (locked_.exchange(1)) {
+    while (locked_.exchange(1) != 0u) {
       spin_wait();
     }
   }

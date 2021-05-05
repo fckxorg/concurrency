@@ -8,10 +8,10 @@
 
 namespace mtf::fibers {
 
-thread_local Fiber* Fiber::current_{nullptr};
+thread_local Fiber* Fiber::current{nullptr};
 
 Fiber& Fiber::AccessCurrent() {
-  return *current_;
+  return *current;
 }
 
 Fiber::Fiber(Routine routine, Scheduler& scheduler)
@@ -42,7 +42,7 @@ void Fiber::Suspend(Awaiter* awaiter) {
 }
 
 void Fiber::Resume() {
-  if (awaiter_) {
+  if (awaiter_ != nullptr) {
     awaiter_->AwaitResume();
     awaiter_ = nullptr;
   }
@@ -55,12 +55,12 @@ void Fiber::Resume() {
 
 void Fiber::Schedule() {
   sched_.Submit([this]() {
-    current_ = this;
+    current = this;
     state_ = Running;
     fiber_routine_.Resume();
-    current_ = nullptr;
+    current = nullptr;
 
-    if (awaiter_) {
+    if (awaiter_ != nullptr) {
       awaiter_->AwaitSuspend(FiberHandle(this));
     } else {
       Reschedule();
@@ -94,7 +94,6 @@ void Fiber::Step() {
 }
 
 void Fiber::Stop() {
-  // Not implemented
 }
 
 }  // namespace mtf::fibers

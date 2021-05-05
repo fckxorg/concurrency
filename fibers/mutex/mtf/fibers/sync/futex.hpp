@@ -4,6 +4,7 @@
 #include <mtf/fibers/core/suspend.hpp>
 
 #include <mutex>
+#include <cassert>
 #include <twist/stdlike/atomic.hpp>
 
 #include <wheels/support/intrusive_list.hpp>
@@ -22,8 +23,7 @@ class FutexLike : public twist::stdlike::atomic<T>,
   }
 
   ~FutexLike() {
-    // Not implemented
-    // Check that wait queue is empty
+    assert(this->Size() == 0);
   }
 
   // Park current fiber if value of atomic is equal to `old`
