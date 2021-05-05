@@ -2,6 +2,7 @@
 
 #include <mtf/fibers/sync/mutex.hpp>
 #include <mtf/fibers/sync/futex.hpp>
+#include <twist/stdlike/atomic.hpp>
 
 // std::unique_lock
 #include <mutex>
@@ -18,7 +19,8 @@ class CondVar {
   void NotifyAll();
 
  private:
-  // ???
+  FutexLike<uint32_t> state_{0};
+  twist::stdlike::atomic<uint32_t> n_waiting_{0};
 };
 
 }  // namespace mtf::fibers
