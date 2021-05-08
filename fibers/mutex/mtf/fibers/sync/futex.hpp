@@ -34,8 +34,8 @@ class FutexLike : public twist::stdlike::atomic<T>,
       return;
     }
 
-    Awaiter* awaiter = new Awaiter{this, mutex_};
-    Suspend(awaiter);
+    Awaiter awaiter{this, mutex_};
+    Suspend(&awaiter);
   }
 
   void WakeOne() {

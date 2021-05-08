@@ -51,7 +51,6 @@ class Awaiter {
     lock_.unlock();
   }
   void AwaitResume() {
-    delete this;
   }
 };
 
